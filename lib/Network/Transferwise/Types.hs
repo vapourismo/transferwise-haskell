@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ViewPatterns               #-}
 
 module Network.Transferwise.Types
     ( ApiToken (..)
@@ -9,15 +10,20 @@ module Network.Transferwise.Types
     , ProfileId (..)
     , Profile (..)
     , AddressId (..)
+    , UserId (..)
+    , QuoteId (..)
+    , QuoteType (..)
+    , Quote (..)
+    , CreateQuote (..)
     )
 where
 
-import           Data.Aeson      ((.:))
+import           Data.Aeson      ((.:), (.=))
 import qualified Data.Aeson      as Aeson
 import           Data.ByteString (ByteString)
 import           Data.Scientific (Scientific)
 import           Data.String     (IsString)
-import           Data.Text       (Text)
+import           Data.Text       (Text, toLower)
 import           Data.Time       (Day, UTCTime)
 
 import Servant.API (ToHttpApiData (..))
@@ -88,8 +94,8 @@ data ProfileType
     deriving (Show, Eq, Ord, Bounded, Enum)
 
 instance Aeson.FromJSON ProfileType where
-    parseJSON (Aeson.String "personal") = pure Personal
-    parseJSON (Aeson.String "business") = pure Business
+    parseJSON (Aeson.String (toLower -> "personal")) = pure Personal
+    parseJSON (Aeson.String (toLower -> "business")) = pure Business
     parseJSON _                         = fail "Profile type needs to be 'personal' or 'business'"
 
 instance Aeson.ToJSON ProfileType where
@@ -133,3 +139,94 @@ instance Aeson.FromJSON Profile where
 
 newtype AddressId = AddressId Integer
     deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON)
+
+----------------------------------------------------------------------------------------------------
+-- User
+
+newtype UserId = UserId Integer
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON)
+
+----------------------------------------------------------------------------------------------------
+-- Quote
+
+data QuoteType
+    = BalancePayout
+    | BalanceConversion
+    | Regular
+    deriving (Show, Eq, Ord, Bounded, Enum)
+
+instance Aeson.FromJSON QuoteType where
+    parseJSON (Aeson.String quoteType) = case toLower quoteType of
+        "balance_payout"     -> pure BalancePayout
+        "balance_conversion" -> pure BalanceConversion
+        "regular"            -> pure Regular
+        _                    -> fail ("Unknown QuoteType: " <> show quoteType)
+    parseJSON _ = fail "QuoteType must be a string"
+
+instance Aeson.ToJSON QuoteType where
+    toJSON BalancePayout     = "BALANCE_PAYOUT"
+    toJSON BalanceConversion = "BALANCE_CONVERSION"
+    toJSON Regular           = "REGULAR"
+
+data CreateQuote = CreateQuote
+    { createQuoteProfile :: ProfileId
+    , createQuoteSource  :: Currency
+    , createQuoteTarget  :: Currency
+    , createQuoteAmount  :: Either Scientific Scientific
+    , createQuoteType    :: QuoteType
+    }
+    deriving (Show, Eq)
+
+instance Aeson.ToJSON CreateQuote where
+    toJSON quote = Aeson.object
+        [ "profile"  .= createQuoteProfile quote
+        , "source"   .= createQuoteSource quote
+        , "target"   .= createQuoteTarget quote
+        , amountField
+        , "rateType" .= ("FIXED" :: Text)
+        , "type"     .= createQuoteType quote
+        ]
+        where
+            amountField = case createQuoteAmount quote of
+                Left amount  -> "sourceAmount" .= amount
+                Right amount -> "targetAmount" .= amount
+
+newtype QuoteId = QuoteId Integer
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON)
+
+data Quote = Quote
+    { quoteId                     :: QuoteId
+    , quoteSource                 :: Currency
+    , quoteTarget                 :: Currency
+    , quoteSourceAmount           :: Scientific
+    , quoteTargetAmount           :: Scientific
+    , quoteType                   :: QuoteType
+    , quoteRate                   :: Scientific
+    , quoteCreatedTime            :: UTCTime
+    , quoteCreatedByUserId        :: UserId
+    , quoteProfile                :: ProfileId
+    , quoteDeliveryEstimate       :: UTCTime
+    , quoteFee                    :: Scientific
+    , quoteAllowedProfileTypes    :: [ProfileType]
+    , quoteGuaranteedTargetAmount :: Bool
+    , quoteOfSourceAmount         :: Bool
+    }
+    deriving (Show, Eq)
+
+instance Aeson.FromJSON Quote where
+    parseJSON = Aeson.withObject "Quote" $ \object -> Quote
+        <$> object .: "id"
+        <*> object .: "source"
+        <*> object .: "target"
+        <*> object .: "sourceAmount"
+        <*> object .: "targetAmount"
+        <*> object .: "type"
+        <*> object .: "rate"
+        <*> object .: "createdTime"
+        <*> object .: "createdByUserId"
+        <*> object .: "profile"
+        <*> object .: "deliveryEstimate"
+        <*> object .: "fee"
+        <*> object .: "allowedProfileTypes"
+        <*> object .: "guaranteedTargetAmount"
+        <*> object .: "ofSourceAmount"

@@ -14,6 +14,9 @@ module Network.Transferwise.API
 
       -- * Profiles
     , getProfiles
+
+      -- * Quotes
+    , createQuote
     )
 where
 
@@ -100,6 +103,20 @@ getProfiles
     -> ClientM [Profile]
 
 ----------------------------------------------------------------------------------------------------
+-- Quote
+
+type CreateQuoteApi =
+    AuthorizationHeader
+    :> "quotes"
+    :> ReqBody '[JSON] CreateQuote
+    :> Post '[JSON] Quote
+
+createQuote
+    :: ApiToken
+    -> CreateQuote
+    -> ClientM Quote
+
+----------------------------------------------------------------------------------------------------
 -- Servant client
 
 type V1Api =
@@ -107,6 +124,7 @@ type V1Api =
     :<|> GetExchangeRateApi
     :<|> GetExchangeRateOverTimeApi
     :<|> GetProfilesApi
+    :<|> CreateQuoteApi
 
 type Api = "v1" :> V1Api
 
@@ -114,4 +132,5 @@ getExchangeRates
     :<|> getExchangeRate
     :<|> getExchangeRateOverTime
     :<|> getProfiles
+    :<|> createQuote
     = client @Api Proxy
