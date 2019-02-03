@@ -15,6 +15,8 @@ module Network.Transferwise.Types
     , QuoteType (..)
     , Quote (..)
     , CreateQuote (..)
+    , Account (..)
+    , Balance (..)
     )
 where
 
@@ -86,7 +88,7 @@ instance ToHttpApiData Grouping where
 -- Profile
 
 newtype ProfileId = ProfileId Integer
-    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON)
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, ToHttpApiData)
 
 data ProfileType
     = Personal
@@ -230,3 +232,44 @@ instance Aeson.FromJSON Quote where
         <*> object .: "allowedProfileTypes"
         <*> object .: "guaranteedTargetAmount"
         <*> object .: "ofSourceAmount"
+
+----------------------------------------------------------------------------------------------------
+-- Accounts
+
+newtype AccountId = AccountId Integer
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON)
+
+data Balance = Balance
+    { balanceCurrency               :: Currency
+    , balanceAmountValue            :: Scientific
+    , balanceAmountCurrency         :: Currency
+    , balanceReservedAmountValue    :: Scientific
+    , balanceReservedAmountCurrency :: Currency
+    }
+    deriving (Show, Eq)
+
+instance Aeson.FromJSON Balance where
+    parseJSON = Aeson.withObject "Balance" $ \object -> do
+        Aeson.Object amount   <- object .: "amount"
+        Aeson.Object reserved <- object .: "reservedAmount"
+        Balance
+            <$> object   .: "currency"
+            <*> amount   .: "value"
+            <*> amount   .: "currency"
+            <*> reserved .: "value"
+            <*> reserved .: "currency"
+
+data Account = Account
+    { accountId        :: AccountId
+    , accountProfileId :: ProfileId
+    , accountActive    :: Bool
+    , accountBalances  :: [Balance]
+    }
+    deriving (Show, Eq)
+
+instance Aeson.FromJSON Account where
+    parseJSON = Aeson.withObject "Account" $ \object -> Account
+        <$> object .: "id"
+        <*> object .: "profileId"
+        <*> object .: "active"
+        <*> object .: "balances"

@@ -17,6 +17,9 @@ module Network.Transferwise.API
 
       -- * Quotes
     , createQuote
+
+      -- * Borderless Accounts
+    , getAccounts
     )
 where
 
@@ -117,6 +120,20 @@ createQuote
     -> ClientM Quote
 
 ----------------------------------------------------------------------------------------------------
+-- Accounts
+
+type GetAccountsApi =
+    AuthorizationHeader
+    :> "borderless-accounts"
+    :> QueryParam' [Strict, Required] "profileId" ProfileId
+    :> Get '[JSON] [Account]
+
+getAccounts
+    :: ApiToken
+    -> ProfileId
+    -> ClientM [Account]
+
+----------------------------------------------------------------------------------------------------
 -- Servant client
 
 type V1Api =
@@ -125,6 +142,7 @@ type V1Api =
     :<|> GetExchangeRateOverTimeApi
     :<|> GetProfilesApi
     :<|> CreateQuoteApi
+    :<|> GetAccountsApi
 
 type Api = "v1" :> V1Api
 
@@ -133,4 +151,5 @@ getExchangeRates
     :<|> getExchangeRateOverTime
     :<|> getProfiles
     :<|> createQuote
+    :<|> getAccounts
     = client @Api Proxy
