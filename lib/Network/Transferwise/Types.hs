@@ -15,6 +15,7 @@ module Network.Transferwise.Types
     , QuoteType (..)
     , Quote (..)
     , CreateQuote (..)
+    , AccountId (..)
     , Account (..)
     , Balance (..)
     )
