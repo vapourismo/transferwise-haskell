@@ -6,6 +6,7 @@
 module Network.Transferwise.API
     ( -- * Servant basics
       transferwiseApiBaseUrl
+    , transferwiseSandboxApiBaseUrl
 
       -- * Exchange rates
     , getExchangeRates
@@ -42,6 +43,14 @@ transferwiseApiBaseUrl = BaseUrl
     , baseUrlPath   = ""
     }
 
+transferwiseSandboxApiBaseUrl :: BaseUrl
+transferwiseSandboxApiBaseUrl = BaseUrl
+    { baseUrlScheme = Https
+    , baseUrlHost   = "api.sandbox.transferwise.tech"
+    , baseUrlPort   = 443
+    , baseUrlPath   = ""
+    }
+
 ----------------------------------------------------------------------------------------------------
 -- Utilities
 
@@ -65,14 +74,14 @@ type GetExchangeRateApi =
     :> QueryParam' [Strict, Required] "source" Currency
     :> QueryParam' [Strict, Required] "target" Currency
     :> QueryParam' [Strict, Optional] "time"   UTCTime
-    :> Get '[JSON] ExchangeRate
+    :> Get '[JSON] [ExchangeRate]
 
 getExchangeRate
     :: ApiToken
     -> Currency
     -> Currency
     -> Maybe UTCTime
-    -> ClientM ExchangeRate
+    -> ClientM [ExchangeRate]
 
 type GetExchangeRateOverTimeApi =
     AuthorizationHeader

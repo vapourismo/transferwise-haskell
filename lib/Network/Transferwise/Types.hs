@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ViewPatterns               #-}
 
@@ -57,10 +58,10 @@ instance ToHttpApiData Currency where
 -- Exchange rate
 
 data ExchangeRate = ExchangeRate
-    { exhangeRateSource :: Currency
-    , exhangeRateTarget :: Currency
-    , exhangeRateValue  :: Scientific
-    , exhangeRateTime   :: UTCTime
+    { exchangeRateSource :: Currency
+    , exchangeRateTarget :: Currency
+    , exchangeRateValue  :: Scientific
+    , exchangeRateTime   :: UTCTime
     }
     deriving (Show, Eq)
 
@@ -97,9 +98,10 @@ data ProfileType
     deriving (Show, Eq, Ord, Bounded, Enum)
 
 instance Aeson.FromJSON ProfileType where
-    parseJSON (Aeson.String (toLower -> "personal")) = pure Personal
-    parseJSON (Aeson.String (toLower -> "business")) = pure Business
-    parseJSON _                         = fail "Profile type needs to be 'personal' or 'business'"
+    parseJSON = \case
+        Aeson.String (toLower -> "personal") -> pure Personal
+        Aeson.String (toLower -> "business") -> pure Business
+        _ -> fail "Profile type needs to be 'personal' or 'business'"
 
 instance Aeson.ToJSON ProfileType where
     toJSON Personal = "personal"
