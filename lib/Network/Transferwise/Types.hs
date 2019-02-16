@@ -25,6 +25,7 @@ where
 import           Data.Aeson      ((.:), (.=))
 import qualified Data.Aeson      as Aeson
 import           Data.ByteString (ByteString)
+import           Data.Hashable   (Hashable)
 import           Data.Scientific (Scientific)
 import           Data.String     (IsString)
 import           Data.Text       (Text, toLower)
@@ -36,7 +37,7 @@ import Servant.API (ToHttpApiData (..))
 -- API token
 
 newtype ApiToken = ApiToken {fromApiToken :: ByteString}
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, IsString, Hashable)
 
 instance ToHttpApiData ApiToken where
     toHeader (ApiToken auth) = "Bearer " <> auth
@@ -49,7 +50,7 @@ instance ToHttpApiData ApiToken where
 -- Currency
 
 newtype Currency = Currency {fromCurrency :: Text}
-    deriving (Show, Eq, Ord, IsString, Aeson.FromJSON, Aeson.ToJSON)
+    deriving (Show, Eq, Ord, IsString, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
 instance ToHttpApiData Currency where
     toQueryParam = toQueryParam . fromCurrency
@@ -90,7 +91,7 @@ instance ToHttpApiData Grouping where
 -- Profile
 
 newtype ProfileId = ProfileId Integer
-    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, ToHttpApiData)
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, ToHttpApiData, Hashable)
 
 data ProfileType
     = Personal
@@ -143,13 +144,13 @@ instance Aeson.FromJSON Profile where
 -- Address
 
 newtype AddressId = AddressId Integer
-    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON)
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
 ----------------------------------------------------------------------------------------------------
 -- User
 
 newtype UserId = UserId Integer
-    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON)
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
 ----------------------------------------------------------------------------------------------------
 -- Quote
@@ -197,7 +198,7 @@ instance Aeson.ToJSON CreateQuote where
                 Right amount -> "targetAmount" .= amount
 
 newtype QuoteId = QuoteId Integer
-    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON)
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
 data Quote = Quote
     { quoteId                     :: QuoteId
@@ -240,7 +241,7 @@ instance Aeson.FromJSON Quote where
 -- Accounts
 
 newtype AccountId = AccountId Integer
-    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON)
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
 data Balance = Balance
     { balanceCurrency               :: Currency

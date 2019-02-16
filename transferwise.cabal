@@ -5,7 +5,8 @@ build-type:    Simple
 
 library
   default-language: Haskell2010
-  build-depends:    base, servant, servant-client, text, bytestring, aeson, scientific, time
+  build-depends:    base, servant, servant-client, text, bytestring, aeson, scientific, time,
+                    hashable
   ghc-options:      -Wall -Wno-name-shadowing
   hs-source-dirs:   lib
   exposed-modules:  Network.Transferwise.API
