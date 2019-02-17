@@ -3,31 +3,15 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ViewPatterns               #-}
 
-module Network.Transferwise.Types
-    ( ApiToken (..)
-    , Currency (..)
-    , ExchangeRate (..)
-    , Grouping (..)
-    , ProfileId (..)
-    , Profile (..)
-    , AddressId (..)
-    , UserId (..)
-    , QuoteId (..)
-    , QuoteType (..)
-    , Quote (..)
-    , CreateQuote (..)
-    , AccountId (..)
-    , Account (..)
-    , Balance (..)
-    )
-where
+module Network.Transferwise.Types where
 
 import           Data.Aeson      ((.:), (.=))
 import qualified Data.Aeson      as Aeson
 import           Data.ByteString (ByteString)
 import           Data.Hashable   (Hashable)
 import           Data.Scientific (Scientific)
-import           Data.String     (IsString)
+import qualified Data.Scientific as Scientific
+import           Data.String     (IsString (fromString))
 import           Data.Text       (Text, toLower)
 import           Data.Time       (Day, UTCTime)
 
@@ -153,7 +137,44 @@ newtype UserId = UserId Integer
     deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
 ----------------------------------------------------------------------------------------------------
+-- Amount
+
+newtype Amount = Amount Scientific
+    deriving
+        ( Show
+        , Eq
+        , Ord
+        , Aeson.FromJSON
+        , Aeson.ToJSON
+        , Hashable
+        , Num
+        , Real
+        , RealFrac
+        , Fractional
+        )
+
+instance ToHttpApiData Amount where
+    toHeader (Amount value) =
+        fromString (Scientific.formatScientific Scientific.Fixed Nothing value)
+
+    toUrlPiece (Amount value) =
+        fromString (Scientific.formatScientific Scientific.Fixed Nothing value)
+
+    toQueryParam (Amount value) =
+        fromString (Scientific.formatScientific Scientific.Fixed Nothing value)
+
+
+----------------------------------------------------------------------------------------------------
 -- Quote
+
+data RateType
+    = Fixed
+    deriving (Show, Eq, Ord, Bounded, Enum)
+
+instance ToHttpApiData RateType where
+    toHeader     _ = "FIXED"
+    toUrlPiece   _ = "FIXED"
+    toQueryParam _ = "FIXED"
 
 data QuoteType
     = BalancePayout
@@ -231,6 +252,37 @@ instance Aeson.FromJSON Quote where
         <*> object .: "createdTime"
         <*> object .: "createdByUserId"
         <*> object .: "profile"
+        <*> object .: "deliveryEstimate"
+        <*> object .: "fee"
+        <*> object .: "allowedProfileTypes"
+        <*> object .: "guaranteedTargetAmount"
+        <*> object .: "ofSourceAmount"
+
+data TemporaryQuote = TemporaryQuote
+    { tempQuoteSource                 :: Currency
+    , tempQuoteTarget                 :: Currency
+    , tempQuoteSourceAmount           :: Scientific
+    , tempQuoteTargetAmount           :: Scientific
+    , tempQuoteType                   :: QuoteType
+    , tempQuoteRate                   :: Scientific
+    , tempQuoteCreatedTime            :: UTCTime
+    , tempQuoteDeliveryEstimate       :: UTCTime
+    , tempQuoteFee                    :: Scientific
+    , tempQuoteAllowedProfileTypes    :: [ProfileType]
+    , tempQuoteGuaranteedTargetAmount :: Bool
+    , tempQuoteOfSourceAmount         :: Bool
+    }
+    deriving (Show, Eq)
+
+instance Aeson.FromJSON TemporaryQuote where
+    parseJSON = Aeson.withObject "TemporaryQuote" $ \object -> TemporaryQuote
+        <$> object .: "source"
+        <*> object .: "target"
+        <*> object .: "sourceAmount"
+        <*> object .: "targetAmount"
+        <*> object .: "type"
+        <*> object .: "rate"
+        <*> object .: "createdTime"
         <*> object .: "deliveryEstimate"
         <*> object .: "fee"
         <*> object .: "allowedProfileTypes"

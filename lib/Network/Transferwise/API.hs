@@ -18,6 +18,7 @@ module Network.Transferwise.API
 
       -- * Quotes
     , createQuote
+    , createTemporaryQuote
 
       -- * Borderless Accounts
     , getAccounts
@@ -128,6 +129,25 @@ createQuote
     -> CreateQuote
     -> ClientM Quote
 
+type CreateTemporaryQuoteApi =
+    AuthorizationHeader
+    :> "quotes"
+    :> QueryParam' [Strict, Required] "source"       Currency
+    :> QueryParam' [Strict, Required] "target"       Currency
+    :> QueryParam' [Strict, Optional] "sourceAmount" Amount
+    :> QueryParam' [Strict, Optional] "targetAmount" Amount
+    :> QueryParam' [Strict, Required] "rateType"     RateType
+    :> Get '[JSON] TemporaryQuote
+
+createTemporaryQuote
+    :: ApiToken
+    -> Currency
+    -> Currency
+    -> Maybe Amount
+    -> Maybe Amount
+    -> RateType
+    -> ClientM TemporaryQuote
+
 ----------------------------------------------------------------------------------------------------
 -- Accounts
 
@@ -151,6 +171,7 @@ type V1Api =
     :<|> GetExchangeRateOverTimeApi
     :<|> GetProfilesApi
     :<|> CreateQuoteApi
+    :<|> CreateTemporaryQuoteApi
     :<|> GetAccountsApi
 
 type Api = "v1" :> V1Api
@@ -160,5 +181,6 @@ getExchangeRates
     :<|> getExchangeRateOverTime
     :<|> getProfiles
     :<|> createQuote
+    :<|> createTemporaryQuote
     :<|> getAccounts
     = client @Api Proxy
