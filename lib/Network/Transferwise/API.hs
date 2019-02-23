@@ -3,27 +3,8 @@
 {-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Network.Transferwise.API
-    ( -- * Servant basics
-      transferwiseApiBaseUrl
-    , transferwiseSandboxApiBaseUrl
-
-      -- * Exchange rates
-    , getExchangeRates
-    , getExchangeRate
-    , getExchangeRateOverTime
-
-      -- * Profiles
-    , getProfiles
-
-      -- * Quotes
-    , createQuote
-    , createTemporaryQuote
-
-      -- * Borderless Accounts
-    , getAccounts
-    )
-where
+-- | Servant Client types and functions
+module Network.Transferwise.API where
 
 import Data.Proxy (Proxy (..))
 import Data.Time  (UTCTime)
@@ -94,7 +75,7 @@ type GetExchangeRateOverTimeApi =
     :> QueryParam' [Strict, Optional] "group"  Grouping
     :> Get '[JSON] [ExchangeRate]
 
-getExchangeRateOverTime
+getExchangeRatesDuring
     :: ApiToken
     -> Currency
     -> Currency
@@ -178,7 +159,7 @@ type Api = "v1" :> V1Api
 
 getExchangeRates
     :<|> getExchangeRate
-    :<|> getExchangeRateOverTime
+    :<|> getExchangeRatesDuring
     :<|> getProfiles
     :<|> createQuote
     :<|> createTemporaryQuote

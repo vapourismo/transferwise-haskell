@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ViewPatterns               #-}
 
+-- | Request and response types
 module Network.Transferwise.Types where
 
 import           Data.Aeson      ((.:), (.=))
@@ -34,10 +35,17 @@ instance ToHttpApiData Currency where
     toQueryParam = toQueryParam . fromCurrency
 
 data ExchangeRate = ExchangeRate
-    { exchangeRateSource :: Currency
-    , exchangeRateTarget :: Currency
-    , exchangeRateValue  :: Scientific
-    , exchangeRateTime   :: UTCTime
+    { -- | Pay currency
+      exchangeRateSource :: Currency
+
+    , -- | Receive currency
+      exchangeRateTarget :: Currency
+
+    , -- | Value of the pay currency expressed in the receive currency
+      exchangeRateValue  :: Scientific
+
+    , -- | Time stamp
+      exchangeRateTime   :: UTCTime
     }
     deriving (Show, Eq)
 
