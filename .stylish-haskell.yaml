@@ -152,10 +152,8 @@ steps:
       remove_redundant: true
 
   # Replace tabs by spaces. This is disabled by default.
-  # - tabs:
-  #     # Number of spaces to use for each tab. Default: 8, as specified by the
-  #     # Haskell report.
-  #     spaces: 8
+  - tabs:
+      spaces: 4
 
   # Remove trailing whitespace
   - trailing_whitespace: {}
@@ -186,3 +184,7 @@ language_extensions:
   - DataKinds
   - FlexibleContexts
   - KindSignatures
+  - ImplicitParams
+  - RankNTypes
+  - ConstraintKinds
+  - PolyKinds
