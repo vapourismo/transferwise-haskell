@@ -12,7 +12,7 @@ import           Data.Hashable   (Hashable)
 import           Data.Scientific (Scientific)
 import qualified Data.Scientific as Scientific
 import           Data.String     (IsString (fromString))
-import           Data.Text       (Text, toLower)
+import           Data.Text       (Text, toLower, toUpper)
 import           Data.Time       (Day, UTCTime)
 
 import Servant.API (ToHttpApiData (..))
@@ -183,10 +183,10 @@ data QuoteType
     deriving (Show, Eq, Ord, Bounded, Enum)
 
 instance Aeson.FromJSON QuoteType where
-    parseJSON (Aeson.String quoteType) = case toLower quoteType of
-        "balance_payout"     -> pure BalancePayout
-        "balance_conversion" -> pure BalanceConversion
-        "regular"            -> pure Regular
+    parseJSON (Aeson.String quoteType) = case toUpper quoteType of
+        "BALANCE_PAYOUT"     -> pure BalancePayout
+        "BALANCE_CONVERSION" -> pure BalanceConversion
+        "REGULAR"            -> pure Regular
         _                    -> fail ("Unknown QuoteType: " <> show quoteType)
     parseJSON _ = fail "QuoteType must be a string"
 
