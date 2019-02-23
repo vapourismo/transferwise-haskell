@@ -137,7 +137,7 @@ type CreateTemporaryQuoteApi =
     :> QueryParam' [Strict, Optional] "sourceAmount" Amount
     :> QueryParam' [Strict, Optional] "targetAmount" Amount
     :> QueryParam' [Strict, Required] "rateType"     RateType
-    :> Get '[JSON] TemporaryQuote
+    :> Get '[JSON] TempQuote
 
 createTemporaryQuote
     :: ApiToken
@@ -146,7 +146,7 @@ createTemporaryQuote
     -> Maybe Amount
     -> Maybe Amount
     -> RateType
-    -> ClientM TemporaryQuote
+    -> ClientM TempQuote
 
 ----------------------------------------------------------------------------------------------------
 -- Accounts

@@ -258,7 +258,7 @@ instance Aeson.FromJSON Quote where
         <*> object .: "guaranteedTargetAmount"
         <*> object .: "ofSourceAmount"
 
-data TemporaryQuote = TemporaryQuote
+data TempQuote = TempQuote
     { tempQuoteSource                 :: Currency
     , tempQuoteTarget                 :: Currency
     , tempQuoteSourceAmount           :: Scientific
@@ -274,8 +274,8 @@ data TemporaryQuote = TemporaryQuote
     }
     deriving (Show, Eq)
 
-instance Aeson.FromJSON TemporaryQuote where
-    parseJSON = Aeson.withObject "TemporaryQuote" $ \object -> TemporaryQuote
+instance Aeson.FromJSON TempQuote where
+    parseJSON = Aeson.withObject "TempQuote" $ \object -> TempQuote
         <$> object .: "source"
         <*> object .: "target"
         <*> object .: "sourceAmount"
