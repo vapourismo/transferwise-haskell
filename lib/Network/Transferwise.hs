@@ -16,8 +16,15 @@ module Network.Transferwise
     , exchangeRateAt
     , exchangeRatesDuring
 
+      -- * Profiles
+    , Profile (..)
+    , profiles
+
       -- * Auxiliary types
     , Currency (..)
+    , ProfileId (..)
+    , ProfileType (..)
+    , AddressId (..)
     )
 where
 
@@ -82,3 +89,10 @@ exchangeRatesDuring
     -> Maybe Grouping -- ^ Grouping ('Nothing' does not mean no grouping)
     -> ClientM [ExchangeRate]
 exchangeRatesDuring = API.getExchangeRatesDuring ?apiToken
+
+----------------------------------------------------------------------------------------------------
+-- Profiles
+
+-- | List the profiles that are associated with the API token.
+profiles :: HasApiToken => ClientM [Profile]
+profiles = API.getProfiles ?apiToken

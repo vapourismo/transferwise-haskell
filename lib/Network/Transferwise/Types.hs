@@ -95,6 +95,7 @@ data Profile
         , profilePrimaryAddress :: AddressId
         }
     | BusinessProfile
+        -- TODO: Add more fields to the business profile constructor
         { profileId   :: ProfileId
         , profileName :: Text
         }
