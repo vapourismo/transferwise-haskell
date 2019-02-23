@@ -17,9 +17,6 @@ import           Data.Time       (Day, UTCTime)
 
 import Servant.API (ToHttpApiData (..))
 
-----------------------------------------------------------------------------------------------------
--- API token
-
 newtype ApiToken = ApiToken {fromApiToken :: ByteString}
     deriving (Eq, Ord, IsString, Hashable)
 
@@ -30,17 +27,11 @@ instance ToHttpApiData ApiToken where
 
     toQueryParam _ = mempty  -- We don't want to leak this by accident.
 
-----------------------------------------------------------------------------------------------------
--- Currency
-
 newtype Currency = Currency {fromCurrency :: Text}
     deriving (Show, Eq, Ord, IsString, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
 instance ToHttpApiData Currency where
     toQueryParam = toQueryParam . fromCurrency
-
-----------------------------------------------------------------------------------------------------
--- Exchange rate
 
 data ExchangeRate = ExchangeRate
     { exchangeRateSource :: Currency
@@ -57,9 +48,6 @@ instance Aeson.FromJSON ExchangeRate where
         <*> object .: "rate"
         <*> object .: "time"
 
-----------------------------------------------------------------------------------------------------
--- Result grouping
-
 data Grouping
     = Day
     | Hour
@@ -70,9 +58,6 @@ instance ToHttpApiData Grouping where
     toQueryParam Day        = "day"
     toQueryParam Hour       = "hour"
     toQueryParam TenMinutes = "minute"
-
-----------------------------------------------------------------------------------------------------
--- Profile
 
 newtype ProfileId = ProfileId Integer
     deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, ToHttpApiData, Hashable)
@@ -124,20 +109,11 @@ instance Aeson.FromJSON Profile where
                 <$> outer   .: "id"
                 <*> details .: "name"
 
-----------------------------------------------------------------------------------------------------
--- Address
-
 newtype AddressId = AddressId Integer
     deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
-----------------------------------------------------------------------------------------------------
--- User
-
 newtype UserId = UserId Integer
     deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
-
-----------------------------------------------------------------------------------------------------
--- Amount
 
 newtype Amount = Amount Scientific
     deriving
@@ -163,9 +139,6 @@ instance ToHttpApiData Amount where
     toQueryParam (Amount value) =
         fromString (Scientific.formatScientific Scientific.Fixed Nothing value)
 
-
-----------------------------------------------------------------------------------------------------
--- Quote
 
 data RateType
     = Fixed
@@ -288,9 +261,6 @@ instance Aeson.FromJSON TempQuote where
         <*> object .: "allowedProfileTypes"
         <*> object .: "guaranteedTargetAmount"
         <*> object .: "ofSourceAmount"
-
-----------------------------------------------------------------------------------------------------
--- Accounts
 
 newtype AccountId = AccountId Integer
     deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
