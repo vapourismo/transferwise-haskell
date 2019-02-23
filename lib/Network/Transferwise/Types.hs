@@ -26,9 +26,9 @@ newtype ApiToken = ApiToken {fromApiToken :: ByteString}
 instance ToHttpApiData ApiToken where
     toHeader (ApiToken auth) = "Bearer " <> auth
 
-    toUrlPiece _ = mempty
+    toUrlPiece _ = mempty -- We don't want to leak this by accident.
 
-    toQueryParam _ = mempty
+    toQueryParam _ = mempty  -- We don't want to leak this by accident.
 
 ----------------------------------------------------------------------------------------------------
 -- Currency
