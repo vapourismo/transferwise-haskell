@@ -20,11 +20,16 @@ module Network.Transferwise
     , Profile (..)
     , profiles
 
+      -- * Accounts
+    , accounts
+
       -- * Auxiliary types
     , Currency (..)
-    , ProfileId (..)
+    , ProfileId
     , ProfileType (..)
-    , AddressId (..)
+    , AddressId
+    , AccountId
+    , Balance (..)
     )
 where
 
@@ -96,3 +101,10 @@ exchangeRatesDuring = API.getExchangeRatesDuring ?apiToken
 -- | List the profiles that are associated with the API token.
 profiles :: HasApiToken => ClientM [Profile]
 profiles = API.getProfiles ?apiToken
+
+----------------------------------------------------------------------------------------------------
+-- Accounts
+
+-- | Retrieve a list of accounts associated with the given profile.
+accounts :: HasApiToken => ProfileId -> ClientM [Account]
+accounts = API.getAccounts ?apiToken
