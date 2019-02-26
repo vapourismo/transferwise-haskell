@@ -29,12 +29,6 @@ instance ToHttpApiData ApiToken where
 
     toQueryParam _ = mempty  -- We don't want to leak this by accident.
 
-newtype Currency = Currency {fromCurrency :: Text}
-    deriving (Show, Eq, Ord, IsString, Aeson.FromJSON, Aeson.ToJSON, Hashable)
-
-instance ToHttpApiData Currency where
-    toQueryParam = toQueryParam . fromCurrency
-
 toSomeDense :: Text -> Rational -> Aeson.Parser Money.SomeDense
 toSomeDense currency notional =
     maybe
@@ -192,8 +186,8 @@ data Conversion
 
 data CreateQuote = CreateQuote
     { createQuoteProfile    :: ProfileId
-    , createQuoteConversion :: Conversion
     , createQuoteType       :: QuoteType
+    , createQuoteConversion :: Conversion
     }
     deriving (Show, Eq)
 

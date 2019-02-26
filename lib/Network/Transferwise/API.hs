@@ -7,6 +7,7 @@
 module Network.Transferwise.API where
 
 import Data.Proxy (Proxy (..))
+import Data.Text  (Text)
 import Data.Time  (UTCTime)
 
 import Servant.API
@@ -53,23 +54,23 @@ getExchangeRates
 type GetExchangeRateApi =
     AuthorizationHeader
     :> "rates"
-    :> QueryParam' [Strict, Required] "source" Currency
-    :> QueryParam' [Strict, Required] "target" Currency
+    :> QueryParam' [Strict, Required] "source" Text
+    :> QueryParam' [Strict, Required] "target" Text
     :> QueryParam' [Strict, Optional] "time"   UTCTime
     :> Get '[JSON] [ExchangeRate]
 
 getExchangeRate
     :: ApiToken
-    -> Currency
-    -> Currency
+    -> Text
+    -> Text
     -> Maybe UTCTime
     -> ClientM [ExchangeRate]
 
 type GetExchangeRateOverTimeApi =
     AuthorizationHeader
     :> "rates"
-    :> QueryParam' [Strict, Required] "source" Currency
-    :> QueryParam' [Strict, Required] "target" Currency
+    :> QueryParam' [Strict, Required] "source" Text
+    :> QueryParam' [Strict, Required] "target" Text
     :> QueryParam' [Strict, Required] "from"   UTCTime
     :> QueryParam' [Strict, Required] "to"     UTCTime
     :> QueryParam' [Strict, Optional] "group"  Grouping
@@ -77,8 +78,8 @@ type GetExchangeRateOverTimeApi =
 
 getExchangeRatesDuring
     :: ApiToken
-    -> Currency
-    -> Currency
+    -> Text
+    -> Text
     -> UTCTime
     -> UTCTime
     -> Maybe Grouping
@@ -113,8 +114,8 @@ createQuote
 type CreateTemporaryQuoteApi =
     AuthorizationHeader
     :> "quotes"
-    :> QueryParam' [Strict, Required] "source"       Currency
-    :> QueryParam' [Strict, Required] "target"       Currency
+    :> QueryParam' [Strict, Required] "source"       Text
+    :> QueryParam' [Strict, Required] "target"       Text
     :> QueryParam' [Strict, Optional] "sourceAmount" Amount
     :> QueryParam' [Strict, Optional] "targetAmount" Amount
     :> QueryParam' [Strict, Required] "rateType"     RateType
@@ -122,8 +123,8 @@ type CreateTemporaryQuoteApi =
 
 createTemporaryQuote
     :: ApiToken
-    -> Currency
-    -> Currency
+    -> Text
+    -> Text
     -> Maybe Amount
     -> Maybe Amount
     -> RateType

@@ -24,7 +24,6 @@ module Network.Transferwise
     , accounts
 
       -- * Auxiliary types
-    , Currency (..)
     , ProfileId
     , ProfileType (..)
     , AddressId
@@ -33,6 +32,7 @@ module Network.Transferwise
     )
 where
 
+import Data.Text       (Text)
 import Data.Time.Clock (UTCTime)
 
 import Servant.Client
@@ -63,8 +63,8 @@ exchangeRates = API.getExchangeRates ?apiToken
 -- | Retrieve one exchange rate.
 exchangeRate
     :: HasApiToken
-    => Currency -- ^ Pay currency
-    -> Currency -- ^ Receive currency
+    => Text -- ^ Pay currency
+    -> Text -- ^ Receive currency
     -> ClientM ExchangeRate
 exchangeRate payCcy recvCcy =
     API.getExchangeRate ?apiToken payCcy recvCcy Nothing >>= \case
@@ -74,8 +74,8 @@ exchangeRate payCcy recvCcy =
 -- | Retrieve one exchange rate at a given time.
 exchangeRateAt
     :: HasApiToken
-    => Currency -- ^ Pay currency
-    -> Currency -- ^ Receive currency
+    => Text     -- ^ Pay currency
+    -> Text     -- ^ Receive currency
     -> UTCTime  -- ^ Approximate point in time
     -> ClientM ExchangeRate
 exchangeRateAt payCcy recvCcy time =
@@ -87,8 +87,8 @@ exchangeRateAt payCcy recvCcy time =
 -- will let the Transferwise API choose the grouping.
 exchangeRatesDuring
     :: HasApiToken
-    => Currency       -- ^ Pay currency
-    -> Currency       -- ^ Receive currency
+    => Text           -- ^ Pay currency
+    -> Text           -- ^ Receive currency
     -> UTCTime        -- ^ Period begin
     -> UTCTime        -- ^ Period end
     -> Maybe Grouping -- ^ Grouping ('Nothing' does not mean no grouping)
