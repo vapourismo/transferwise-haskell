@@ -6,15 +6,16 @@
 -- | Request and response types
 module Network.Transferwise.Types where
 
-import           Data.Aeson      ((.:), (.=))
-import qualified Data.Aeson      as Aeson
-import           Data.ByteString (ByteString)
-import           Data.Hashable   (Hashable)
-import           Data.Scientific (Scientific)
-import qualified Data.Scientific as Scientific
-import           Data.String     (IsString (fromString))
-import           Data.Text       (Text, toLower, toUpper)
-import           Data.Time       (Day, UTCTime)
+import           Data.Aeson       ((.:), (.=))
+import qualified Data.Aeson       as Aeson
+import qualified Data.Aeson.Types as Aeson
+import           Data.ByteString  (ByteString)
+import           Data.Hashable    (Hashable)
+import           Data.String      (IsString (fromString))
+import           Data.Text        (Text, toLower, toUpper)
+import           Data.Time        (Day, UTCTime)
+
+import qualified Money
 
 import Servant.API (ToHttpApiData (..))
 
@@ -34,27 +35,32 @@ newtype Currency = Currency {fromCurrency :: Text}
 instance ToHttpApiData Currency where
     toQueryParam = toQueryParam . fromCurrency
 
+toSomeDense :: Text -> Rational -> Aeson.Parser Money.SomeDense
+toSomeDense currency notional =
+    maybe
+        (fail ("Failed to construct Money.SomeDense for " <> show (currency, notional)))
+        pure
+        (Money.mkSomeDense currency notional)
+
+toSomeExchangeRate :: Text -> Text -> Rational -> Aeson.Parser Money.SomeExchangeRate
+toSomeExchangeRate payCcy receiveCcy rate =
+    maybe
+        (fail ("Failed to construct Money.SomeExchangeRate for " <> show (payCcy, receiveCcy, rate)))
+        pure
+        (Money.mkSomeExchangeRate payCcy receiveCcy rate)
+
 data ExchangeRate = ExchangeRate
-    { -- | Pay currency
-      exchangeRateSource :: Currency
-
-    , -- | Receive currency
-      exchangeRateTarget :: Currency
-
-    , -- | Value of the pay currency expressed in the receive currency
-      exchangeRateValue  :: Scientific
-
-    , -- | Time stamp
-      exchangeRateTime   :: UTCTime
+    { exchangeRateValue :: Money.SomeExchangeRate
+    , exchangeRateTime  :: UTCTime
     }
     deriving (Show, Eq)
 
 instance Aeson.FromJSON ExchangeRate where
-    parseJSON = Aeson.withObject "ExchangeRate" $ \object -> ExchangeRate
-        <$> object .: "source"
-        <*> object .: "target"
-        <*> object .: "rate"
-        <*> object .: "time"
+    parseJSON = Aeson.withObject "ExchangeRate" $ \object -> do
+        source <- object .: "source"
+        target <- object .: "target"
+        rate   <- object .: "rate"
+        ExchangeRate <$> toSomeExchangeRate source target rate <*> object .: "time"
 
 data Grouping
     = Day
@@ -124,7 +130,7 @@ newtype AddressId = AddressId Integer
 newtype UserId = UserId Integer
     deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
-newtype Amount = Amount Scientific
+newtype Amount = Amount Rational
     deriving
         ( Show
         , Eq
@@ -139,15 +145,11 @@ newtype Amount = Amount Scientific
         )
 
 instance ToHttpApiData Amount where
-    toHeader (Amount value) =
-        fromString (Scientific.formatScientific Scientific.Fixed Nothing value)
+    toHeader (Amount value) = fromString (show (fromRational value :: Double))
 
-    toUrlPiece (Amount value) =
-        fromString (Scientific.formatScientific Scientific.Fixed Nothing value)
+    toUrlPiece (Amount value) = fromString (show (fromRational value :: Double))
 
-    toQueryParam (Amount value) =
-        fromString (Scientific.formatScientific Scientific.Fixed Nothing value)
-
+    toQueryParam (Amount value) = fromString (show (fromRational value :: Double))
 
 data RateType
     = Fixed
@@ -177,45 +179,58 @@ instance Aeson.ToJSON QuoteType where
     toJSON BalanceConversion = "BALANCE_CONVERSION"
     toJSON Regular           = "REGULAR"
 
+data Conversion
+    = Pay
+        { conversionPay             :: Money.SomeDense
+        , conversionReceiveCurrency :: Text
+        }
+    | Receive
+        { conversionPayCurrency :: Text
+        , conversionReceive     :: Money.SomeDense
+        }
+    deriving (Show, Eq)
+
 data CreateQuote = CreateQuote
-    { createQuoteProfile :: ProfileId
-    , createQuoteSource  :: Currency
-    , createQuoteTarget  :: Currency
-    , createQuoteAmount  :: Either Scientific Scientific
-    , createQuoteType    :: QuoteType
+    { createQuoteProfile    :: ProfileId
+    , createQuoteConversion :: Conversion
+    , createQuoteType       :: QuoteType
     }
     deriving (Show, Eq)
 
 instance Aeson.ToJSON CreateQuote where
-    toJSON quote = Aeson.object
-        [ "profile"  .= createQuoteProfile quote
-        , "source"   .= createQuoteSource quote
-        , "target"   .= createQuoteTarget quote
-        , amountField
-        , "rateType" .= ("FIXED" :: Text)
-        , "type"     .= createQuoteType quote
-        ]
+    toJSON quote = Aeson.object $
+        ("profile"    .= createQuoteProfile quote)
+        : ("rateType" .= ("FIXED" :: Text))
+        : ("type"     .= createQuoteType quote)
+        : amountField
         where
-            amountField = case createQuoteAmount quote of
-                Left amount  -> "sourceAmount" .= amount
-                Right amount -> "targetAmount" .= amount
+            amountField = case createQuoteConversion quote of
+                Pay pay receiveCcy ->
+                    [ "source"       .= Money.someDenseCurrency pay
+                    , "sourceAmount" .= Money.someDenseAmount pay
+                    , "target"       .= receiveCcy
+                    ]
+
+                Receive payCcy receive ->
+                    [ "source"       .= payCcy
+                    , "target"       .= Money.someDenseCurrency receive
+                    , "targetAmount" .= Money.someDenseAmount receive
+                    ]
 
 newtype QuoteId = QuoteId Integer
     deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
 data Quote = Quote
     { quoteId                     :: QuoteId
-    , quoteSource                 :: Currency
-    , quoteTarget                 :: Currency
-    , quoteSourceAmount           :: Scientific
-    , quoteTargetAmount           :: Scientific
+    , quoteSource                 :: Money.SomeDense
+    , quoteTarget                 :: Money.SomeDense
     , quoteType                   :: QuoteType
-    , quoteRate                   :: Scientific
+    , quoteRate                   :: Money.SomeExchangeRate
     , quoteCreatedTime            :: UTCTime
     , quoteCreatedByUserId        :: UserId
     , quoteProfile                :: ProfileId
     , quoteDeliveryEstimate       :: UTCTime
-    , quoteFee                    :: Scientific
+    , quoteFee                    :: Money.SomeDense
     , quoteAllowedProfileTypes    :: [ProfileType]
     , quoteGuaranteedTargetAmount :: Bool
     , quoteOfSourceAmount         :: Bool
@@ -223,33 +238,37 @@ data Quote = Quote
     deriving (Show, Eq)
 
 instance Aeson.FromJSON Quote where
-    parseJSON = Aeson.withObject "Quote" $ \object -> Quote
-        <$> object .: "id"
-        <*> object .: "source"
-        <*> object .: "target"
-        <*> object .: "sourceAmount"
-        <*> object .: "targetAmount"
-        <*> object .: "type"
-        <*> object .: "rate"
-        <*> object .: "createdTime"
-        <*> object .: "createdByUserId"
-        <*> object .: "profile"
-        <*> object .: "deliveryEstimate"
-        <*> object .: "fee"
-        <*> object .: "allowedProfileTypes"
-        <*> object .: "guaranteedTargetAmount"
-        <*> object .: "ofSourceAmount"
+    parseJSON = Aeson.withObject "Quote" $ \object -> do
+        source       <- object .: "source"
+        target       <- object .: "target"
+        sourceAmount <- object .: "sourceAmount"
+        targetAmount <- object .: "targetAmount"
+        fee          <- object .: "fee"
+        rate         <- object .: "rate"
+
+        Quote
+            <$> object .: "id"
+            <*> toSomeDense source sourceAmount
+            <*> toSomeDense target targetAmount
+            <*> object .: "type"
+            <*> toSomeExchangeRate source target rate
+            <*> object .: "createdTime"
+            <*> object .: "createdByUserId"
+            <*> object .: "profile"
+            <*> object .: "deliveryEstimate"
+            <*> toSomeDense source fee
+            <*> object .: "allowedProfileTypes"
+            <*> object .: "guaranteedTargetAmount"
+            <*> object .: "ofSourceAmount"
 
 data TempQuote = TempQuote
-    { tempQuoteSource                 :: Currency
-    , tempQuoteTarget                 :: Currency
-    , tempQuoteSourceAmount           :: Scientific
-    , tempQuoteTargetAmount           :: Scientific
+    { tempQuoteSource                 :: Money.SomeDense
+    , tempQuoteTarget                 :: Money.SomeDense
     , tempQuoteType                   :: QuoteType
-    , tempQuoteRate                   :: Scientific
+    , tempQuoteRate                   :: Money.SomeExchangeRate
     , tempQuoteCreatedTime            :: UTCTime
     , tempQuoteDeliveryEstimate       :: UTCTime
-    , tempQuoteFee                    :: Scientific
+    , tempQuoteFee                    :: Money.SomeDense
     , tempQuoteAllowedProfileTypes    :: [ProfileType]
     , tempQuoteGuaranteedTargetAmount :: Bool
     , tempQuoteOfSourceAmount         :: Bool
@@ -257,42 +276,46 @@ data TempQuote = TempQuote
     deriving (Show, Eq)
 
 instance Aeson.FromJSON TempQuote where
-    parseJSON = Aeson.withObject "TempQuote" $ \object -> TempQuote
-        <$> object .: "source"
-        <*> object .: "target"
-        <*> object .: "sourceAmount"
-        <*> object .: "targetAmount"
-        <*> object .: "type"
-        <*> object .: "rate"
-        <*> object .: "createdTime"
-        <*> object .: "deliveryEstimate"
-        <*> object .: "fee"
-        <*> object .: "allowedProfileTypes"
-        <*> object .: "guaranteedTargetAmount"
-        <*> object .: "ofSourceAmount"
+    parseJSON = Aeson.withObject "TempQuote" $ \object -> do
+        source       <- object .: "source"
+        target       <- object .: "target"
+        sourceAmount <- object .: "sourceAmount"
+        targetAmount <- object .: "targetAmount"
+        fee          <- object .: "fee"
+        rate         <- object .: "rate"
+
+        TempQuote
+            <$> toSomeDense source sourceAmount
+            <*> toSomeDense target targetAmount
+            <*> object .: "type"
+            <*> toSomeExchangeRate source target rate
+            <*> object .: "createdTime"
+            <*> object .: "deliveryEstimate"
+            <*> toSomeDense source fee
+            <*> object .: "allowedProfileTypes"
+            <*> object .: "guaranteedTargetAmount"
+            <*> object .: "ofSourceAmount"
 
 newtype AccountId = AccountId Integer
     deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
 
 data Balance = Balance
-    { balanceCurrency               :: Currency
-    , balanceAmountValue            :: Scientific
-    , balanceAmountCurrency         :: Currency
-    , balanceReservedAmountValue    :: Scientific
-    , balanceReservedAmountCurrency :: Currency
+    { balanceAmount         :: Money.SomeDense
+    , balanceReservedAmount :: Money.SomeDense
     }
     deriving (Show, Eq)
 
+parseSomeDense :: Aeson.Value -> Aeson.Parser Money.SomeDense
+parseSomeDense = Aeson.withObject "Money.SomeDense" $ \amount -> do
+    currency <- amount .: "currency"
+    notional <- amount .: "value"
+    toSomeDense currency notional
+
 instance Aeson.FromJSON Balance where
     parseJSON = Aeson.withObject "Balance" $ \object -> do
-        Aeson.Object amount   <- object .: "amount"
-        Aeson.Object reserved <- object .: "reservedAmount"
-        Balance
-            <$> object   .: "currency"
-            <*> amount   .: "value"
-            <*> amount   .: "currency"
-            <*> reserved .: "value"
-            <*> reserved .: "currency"
+        amountVal   <- object .: "amount"
+        reservedVal <- object .: "reservedAmount"
+        Balance <$> parseSomeDense amountVal <*> parseSomeDense reservedVal
 
 data Account = Account
     { accountId        :: AccountId
