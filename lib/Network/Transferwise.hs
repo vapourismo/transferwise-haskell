@@ -23,17 +23,28 @@ module Network.Transferwise
       -- * Accounts
     , accounts
 
+      -- * Quotes
+    , TempQuote (..)
+    , tempQuote
+    , Quote (..)
+    , quote
+
       -- * Auxiliary types
     , ProfileId
-    , ProfileType (..)
     , AddressId
     , AccountId
+    , UserId
+    , ProfileType (..)
     , Balance (..)
+    , Conversion (..)
+    , QuoteType (..)
     )
 where
 
 import Data.Text       (Text)
 import Data.Time.Clock (UTCTime)
+
+import Money (someDenseAmount, someDenseCurrency)
 
 import Servant.Client
 
@@ -108,3 +119,32 @@ profiles = API.getProfiles ?apiToken
 -- | Retrieve a list of accounts associated with the given profile.
 accounts :: HasApiToken => ProfileId -> ClientM [Account]
 accounts = API.getAccounts ?apiToken
+
+----------------------------------------------------------------------------------------------------
+-- Quotes
+
+-- | Get a temporary quote.
+tempQuote :: HasApiToken => Conversion -> ClientM TempQuote
+tempQuote = \case
+    ConvertFrom pay recvCcy ->
+        API.createTempQuote
+            ?apiToken
+            (someDenseCurrency pay)
+            (Just (Amount (someDenseAmount pay)))
+            recvCcy
+            Nothing
+            Fixed
+
+    ConvertTo payCcy receive ->
+        API.createTempQuote
+            ?apiToken
+            payCcy
+            Nothing
+            (someDenseCurrency receive)
+            (Just (Amount (someDenseAmount receive)))
+            Fixed
+
+-- | Create a quote.
+quote :: HasApiToken => ProfileId -> QuoteType -> Conversion -> ClientM Quote
+quote profileId quoteType conversion =
+    API.createQuote ?apiToken (CreateQuote profileId quoteType conversion)

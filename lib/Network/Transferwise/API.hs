@@ -115,17 +115,17 @@ type CreateTemporaryQuoteApi =
     AuthorizationHeader
     :> "quotes"
     :> QueryParam' [Strict, Required] "source"       Text
-    :> QueryParam' [Strict, Required] "target"       Text
     :> QueryParam' [Strict, Optional] "sourceAmount" Amount
+    :> QueryParam' [Strict, Required] "target"       Text
     :> QueryParam' [Strict, Optional] "targetAmount" Amount
     :> QueryParam' [Strict, Required] "rateType"     RateType
     :> Get '[JSON] TempQuote
 
-createTemporaryQuote
+createTempQuote
     :: ApiToken
     -> Text
-    -> Text
     -> Maybe Amount
+    -> Text
     -> Maybe Amount
     -> RateType
     -> ClientM TempQuote
@@ -163,6 +163,6 @@ getExchangeRates
     :<|> getExchangeRatesDuring
     :<|> getProfiles
     :<|> createQuote
-    :<|> createTemporaryQuote
+    :<|> createTempQuote
     :<|> getAccounts
     = client @Api Proxy

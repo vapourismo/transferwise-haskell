@@ -154,6 +154,9 @@ instance ToHttpApiData RateType where
     toUrlPiece   _ = "FIXED"
     toQueryParam _ = "FIXED"
 
+instance Aeson.ToJSON RateType where
+    toJSON Fixed = "FIXED"
+
 data QuoteType
     = BalancePayout
     | BalanceConversion
@@ -174,11 +177,11 @@ instance Aeson.ToJSON QuoteType where
     toJSON Regular           = "REGULAR"
 
 data Conversion
-    = Pay
+    = ConvertFrom
         { conversionPay             :: Money.SomeDense
         , conversionReceiveCurrency :: Text
         }
-    | Receive
+    | ConvertTo
         { conversionPayCurrency :: Text
         , conversionReceive     :: Money.SomeDense
         }
@@ -194,18 +197,18 @@ data CreateQuote = CreateQuote
 instance Aeson.ToJSON CreateQuote where
     toJSON quote = Aeson.object $
         ("profile"    .= createQuoteProfile quote)
-        : ("rateType" .= ("FIXED" :: Text))
+        : ("rateType" .= Fixed)
         : ("type"     .= createQuoteType quote)
         : amountField
         where
             amountField = case createQuoteConversion quote of
-                Pay pay receiveCcy ->
+                ConvertFrom pay receiveCcy ->
                     [ "source"       .= Money.someDenseCurrency pay
                     , "sourceAmount" .= Money.someDenseAmount pay
                     , "target"       .= receiveCcy
                     ]
 
-                Receive payCcy receive ->
+                ConvertTo payCcy receive ->
                     [ "source"       .= payCcy
                     , "target"       .= Money.someDenseCurrency receive
                     , "targetAmount" .= Money.someDenseAmount receive
