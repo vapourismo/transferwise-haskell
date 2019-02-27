@@ -43,6 +43,7 @@ module Network.Transferwise
     , Balance (..)
     , Conversion (..)
     , QuoteType (..)
+    , Grouping (..)
     )
 where
 
