@@ -9,6 +9,10 @@ module Network.Transferwise
     , HasApiToken
     , withApiToken
 
+      -- * Servant
+    , API.transferwiseApiBaseUrl
+    , API.transferwiseSandboxApiBaseUrl
+
       -- * Exchange rates
     , ExchangeRate (..)
     , exchangeRates
@@ -29,10 +33,6 @@ module Network.Transferwise
     , tempQuote
     , Quote (..)
     , quote
-
-      -- * Servant
-    , API.transferwiseApiBaseUrl
-    , API.transferwiseSandboxApiBaseUrl
 
       -- * Auxiliary types
     , ProfileId
