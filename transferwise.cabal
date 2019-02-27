@@ -10,5 +10,6 @@ library
   ghc-options:      -Wall -Wno-name-shadowing
   hs-source-dirs:   lib
   exposed-modules:  Network.Transferwise
-                    Network.Transferwise.API
                     Network.Transferwise.Types
+  other-modules:    Network.Transferwise.API
+
