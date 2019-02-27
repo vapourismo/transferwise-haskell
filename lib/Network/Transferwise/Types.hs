@@ -237,27 +237,22 @@ data Quote = Quote
 
 instance Aeson.FromJSON Quote where
     parseJSON = Aeson.withObject "Quote" $ \object -> do
-        source       <- object .: "source"
-        target       <- object .: "target"
-        sourceAmount <- object .: "sourceAmount"
-        targetAmount <- object .: "targetAmount"
-        fee          <- object .: "fee"
-        rate         <- object .: "rate"
+        tempQuote <- Aeson.parseJSON (Aeson.Object object)
 
         Quote
             <$> object .: "id"
-            <*> toSomeDense source (toRational @Double sourceAmount)
-            <*> toSomeDense target (toRational @Double targetAmount)
-            <*> object .: "type"
-            <*> toSomeExchangeRate source target (toRational @Double rate)
-            <*> object .: "createdTime"
+            <*> pure (tempQuoteSource tempQuote)
+            <*> pure (tempQuoteTarget tempQuote)
+            <*> pure (tempQuoteType tempQuote)
+            <*> pure (tempQuoteRate tempQuote)
+            <*> pure (tempQuoteCreatedTime tempQuote)
             <*> object .: "createdByUserId"
             <*> object .: "profile"
-            <*> object .: "deliveryEstimate"
-            <*> toSomeDense source (toRational @Double fee)
-            <*> object .: "allowedProfileTypes"
-            <*> object .: "guaranteedTargetAmount"
-            <*> object .: "ofSourceAmount"
+            <*> pure (tempQuoteDeliveryEstimate tempQuote)
+            <*> pure (tempQuoteFee tempQuote)
+            <*> pure (tempQuoteAllowedProfileTypes tempQuote)
+            <*> pure (tempQuoteGuaranteedTargetAmount tempQuote)
+            <*> pure (tempQuoteOfSourceAmount tempQuote)
 
 data TempQuote = TempQuote
     { tempQuoteSource                 :: Money.SomeDense
