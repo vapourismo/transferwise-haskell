@@ -18,6 +18,7 @@ import Network.Transferwise.Types
 ----------------------------------------------------------------------------------------------------
 -- API base URL
 
+-- | Base URL for the public Transferwise API
 transferwiseApiBaseUrl :: BaseUrl
 transferwiseApiBaseUrl = BaseUrl
     { baseUrlScheme = Https
@@ -26,6 +27,7 @@ transferwiseApiBaseUrl = BaseUrl
     , baseUrlPath   = ""
     }
 
+-- | Base URL for the sandboxed Transferwise API
 transferwiseSandboxApiBaseUrl :: BaseUrl
 transferwiseSandboxApiBaseUrl = BaseUrl
     { baseUrlScheme = Https
