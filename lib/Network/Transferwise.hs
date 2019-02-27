@@ -30,6 +30,10 @@ module Network.Transferwise
     , Quote (..)
     , quote
 
+      -- * Servant
+    , API.transferwiseApiBaseUrl
+    , API.transferwiseSandboxApiBaseUrl
+
       -- * Auxiliary types
     , ProfileId
     , AddressId
