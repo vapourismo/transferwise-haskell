@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE ViewPatterns               #-}
 
 -- | Request and response types
@@ -54,7 +55,7 @@ instance Aeson.FromJSON ExchangeRate where
         source <- object .: "source"
         target <- object .: "target"
         rate   <- object .: "rate"
-        ExchangeRate <$> toSomeExchangeRate source target rate <*> object .: "time"
+        ExchangeRate <$> toSomeExchangeRate source target (toRational @Double rate) <*> object .: "time"
 
 data Grouping
     = Day
@@ -245,15 +246,15 @@ instance Aeson.FromJSON Quote where
 
         Quote
             <$> object .: "id"
-            <*> toSomeDense source sourceAmount
-            <*> toSomeDense target targetAmount
+            <*> toSomeDense source (toRational @Double sourceAmount)
+            <*> toSomeDense target (toRational @Double targetAmount)
             <*> object .: "type"
-            <*> toSomeExchangeRate source target rate
+            <*> toSomeExchangeRate source target (toRational @Double rate)
             <*> object .: "createdTime"
             <*> object .: "createdByUserId"
             <*> object .: "profile"
             <*> object .: "deliveryEstimate"
-            <*> toSomeDense source fee
+            <*> toSomeDense source (toRational @Double fee)
             <*> object .: "allowedProfileTypes"
             <*> object .: "guaranteedTargetAmount"
             <*> object .: "ofSourceAmount"
@@ -282,13 +283,13 @@ instance Aeson.FromJSON TempQuote where
         rate         <- object .: "rate"
 
         TempQuote
-            <$> toSomeDense source sourceAmount
-            <*> toSomeDense target targetAmount
+            <$> toSomeDense source (toRational @Double sourceAmount)
+            <*> toSomeDense target (toRational @Double targetAmount)
             <*> object .: "type"
-            <*> toSomeExchangeRate source target rate
+            <*> toSomeExchangeRate source target (toRational @Double rate)
             <*> object .: "createdTime"
             <*> object .: "deliveryEstimate"
-            <*> toSomeDense source fee
+            <*> toSomeDense source (toRational @Double fee)
             <*> object .: "allowedProfileTypes"
             <*> object .: "guaranteedTargetAmount"
             <*> object .: "ofSourceAmount"
@@ -306,7 +307,7 @@ parseSomeDense :: Aeson.Value -> Aeson.Parser Money.SomeDense
 parseSomeDense = Aeson.withObject "Money.SomeDense" $ \amount -> do
     currency <- amount .: "currency"
     notional <- amount .: "value"
-    toSomeDense currency notional
+    toSomeDense currency (toRational @Double notional)
 
 instance Aeson.FromJSON Balance where
     parseJSON = Aeson.withObject "Balance" $ \object -> do
