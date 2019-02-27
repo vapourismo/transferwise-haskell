@@ -21,6 +21,7 @@ module Network.Transferwise
     , profiles
 
       -- * Accounts
+    , Account (..)
     , accounts
 
       -- * Quotes
