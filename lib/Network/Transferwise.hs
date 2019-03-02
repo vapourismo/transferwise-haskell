@@ -47,8 +47,11 @@ module Network.Transferwise
     )
 where
 
-import Data.Text       (Text)
-import Data.Time.Clock (UTCTime)
+import Control.Monad.Except (catchError, throwError)
+
+import qualified Data.Aeson      as Aeson
+import           Data.Text       (Text)
+import           Data.Time.Clock (UTCTime)
 
 import Money (someDenseAmount, someDenseCurrency)
 
@@ -131,7 +134,7 @@ accounts = API.getAccounts ?apiToken
 
 -- | Get a temporary quote.
 tempQuote :: HasApiToken => Conversion -> ClientM TempQuote
-tempQuote = \case
+tempQuote = ignoreWarning . \case
     ConvertFrom pay recvCcy ->
         API.createTempQuote
             ?apiToken
@@ -149,6 +152,13 @@ tempQuote = \case
             (someDenseCurrency receive)
             (Just (Amount (someDenseAmount receive)))
             Fixed
+    where
+        ignoreWarning :: ClientM TempQuote -> ClientM TempQuote
+        ignoreWarning action = catchError action $ \case
+            FailureResponse response | Just tempQuote <- Aeson.decode (responseBody response) ->
+                pure tempQuote
+
+            other -> throwError other
 
 -- | Create a quote.
 quote :: HasApiToken => ProfileId -> QuoteType -> Conversion -> ClientM Quote
