@@ -290,7 +290,7 @@ instance Aeson.FromJSON TempQuote where
             <*> object .: "ofSourceAmount"
 
 newtype AccountId = AccountId Integer
-    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable)
+    deriving (Show, Eq, Ord, Aeson.FromJSON, Aeson.ToJSON, Hashable, ToHttpApiData)
 
 data Balance = Balance
     { balanceAmount         :: Money.SomeDense
@@ -324,3 +324,73 @@ instance Aeson.FromJSON Account where
         <*> object .: "profileId"
         <*> object .: "active"
         <*> object .: "balances"
+
+newtype Statement = Statement
+    { statementTransactions :: [Transaction] }
+    deriving (Show, Eq)
+
+instance Aeson.FromJSON Statement where
+    parseJSON = Aeson.withObject "Statement" $ \object ->
+        Statement <$> object .: "transactions"
+
+data TransactionType
+    = Credit
+    | Debit
+    deriving (Show, Eq)
+
+instance Aeson.FromJSON TransactionType where
+    parseJSON = Aeson.withText "TransactionType" $ \text -> case toUpper text of
+        "CREDIT" -> pure Credit
+        "DEBIT"  -> pure Debit
+        _        -> fail ("Unknown transaction type: " <> show text)
+
+data TransactionDetails
+    = Conversion
+        { transactionSourceAmount :: Money.SomeDense
+        , transactionTargetAmount :: Money.SomeDense
+        , transactionExchangeRate :: Money.SomeExchangeRate
+        }
+    | Other
+    deriving (Show, Eq)
+
+instance Aeson.FromJSON TransactionDetails where
+    parseJSON = Aeson.withObject "TransactionDetails" $ \object -> do
+        typ <- object .: "type"
+        case toUpper typ of
+            "CONVERSION" -> do
+                sourceAmount <- parseSomeDense =<< object .: "sourceAmount"
+                targetAmount <- parseSomeDense =<< object .: "targetAmount"
+
+                exchangeRate <- do
+                    rate <- object .: "rate"
+                    toSomeExchangeRate
+                        (Money.someDenseCurrency sourceAmount)
+                        (Money.someDenseCurrency targetAmount)
+                        (toRational @Double rate)
+
+                pure $ Conversion
+                    { transactionSourceAmount = sourceAmount
+                    , transactionTargetAmount = targetAmount
+                    , transactionExchangeRate = exchangeRate
+                    }
+
+            _ -> pure Other
+
+data Transaction = Transaction
+    { transactionReference      :: Text
+    , transactionTime           :: UTCTime
+    , transactionType           :: TransactionType
+    , transactionRunningBalance :: Money.SomeDense
+    , transactionTotalFeeds     :: Money.SomeDense
+    , transactionDetails        :: TransactionDetails
+    }
+    deriving (Show, Eq)
+
+instance Aeson.FromJSON Transaction where
+    parseJSON = Aeson.withObject "Transaction" $ \object -> Transaction
+        <$> object .: "referenceNumber"
+        <*> object .: "date"
+        <*> object .: "type"
+        <*> (object .: "runningBalance" >>= parseSomeDense)
+        <*> (object .: "totalFees" >>= parseSomeDense)
+        <*> object .: "details"

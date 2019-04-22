@@ -147,6 +147,27 @@ getAccounts
     -> ClientM [Account]
 
 ----------------------------------------------------------------------------------------------------
+-- Statement
+
+type GetStatementApi =
+    AuthorizationHeader
+    :> "borderless-accounts"
+    :> Capture "accountId" AccountId
+    :> "statement.json"
+    :> QueryParam' [Strict, Required] "currency"      Text
+    :> QueryParam' [Strict, Required] "intervalStart" UTCTime
+    :> QueryParam' [Strict, Required] "intervalEnd"   UTCTime
+    :> Get '[JSON] Statement
+
+getStatement
+    :: ApiToken
+    -> AccountId
+    -> Text
+    -> UTCTime
+    -> UTCTime
+    -> ClientM Statement
+
+----------------------------------------------------------------------------------------------------
 -- Servant client
 
 type V1Api =
@@ -157,6 +178,7 @@ type V1Api =
     :<|> CreateQuoteApi
     :<|> CreateTemporaryQuoteApi
     :<|> GetAccountsApi
+    :<|> GetStatementApi
 
 type Api = "v1" :> V1Api
 
@@ -167,4 +189,5 @@ getExchangeRates
     :<|> createQuote
     :<|> createTempQuote
     :<|> getAccounts
+    :<|> getStatement
     = client @Api Proxy

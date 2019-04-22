@@ -27,6 +27,8 @@ module Network.Transferwise
       -- * Accounts
     , Account (..)
     , accounts
+    , Transaction (..)
+    , transactionsFor
 
       -- * Quotes
     , TempQuote (..)
@@ -44,6 +46,8 @@ module Network.Transferwise
     , Conversion (..)
     , QuoteType (..)
     , Grouping (..)
+    , TransactionType (..)
+    , TransactionDetails (..)
     )
 where
 
@@ -129,6 +133,17 @@ profiles = API.getProfiles ?apiToken
 accounts :: HasApiToken => ProfileId -> ClientM [Account]
 accounts = API.getAccounts ?apiToken
 
+-- | Retrieve all transactions within the given time frame for a specific currency.
+transactionsFor
+    :: HasApiToken
+    => AccountId -- ^ Borderless account ID
+    -> Text      -- ^ Currency
+    -> UTCTime   -- ^ Interval start
+    -> UTCTime   -- ^ Interval end
+    -> ClientM [Transaction]
+transactionsFor accountId currency start end =
+    statementTransactions <$> API.getStatement ?apiToken accountId currency start end
+
 ----------------------------------------------------------------------------------------------------
 -- Quotes
 
@@ -155,7 +170,7 @@ tempQuote = ignoreWarning . \case
     where
         ignoreWarning :: ClientM TempQuote -> ClientM TempQuote
         ignoreWarning action = catchError action $ \case
-            FailureResponse response | Just tempQuote <- Aeson.decode (responseBody response) ->
+            FailureResponse _ response | Just tempQuote <- Aeson.decode (responseBody response) ->
                 pure tempQuote
 
             other -> throwError other
